@@ -16,6 +16,10 @@ public:
     
     bool Connect( const char *ip, int port, const struct timeval *timeout );
 
+    bool Reconnect();
+
+    void Disconnect();
+
     std::shared_ptr<redisReply> Command( const RediscppCommand *cmd );
 
     template<typename ResultType>

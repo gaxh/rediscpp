@@ -50,6 +50,8 @@ static void execute_result_map(RediscppSync *redis, const RediscppCommand *cmd) 
 }
 
 int main(){
+    RESULT("test begin");
+
     RediscppSync redis;
 
     redis.Connect("127.0.0.1", 6379, NULL);
@@ -119,6 +121,12 @@ int main(){
 
         execute_result_string(&redis, &cmd);
     }
+
+    redis.Reconnect();
+
+    redis.Disconnect();
+
+    RESULT("test end");
 
     return 0;
 }

@@ -69,3 +69,24 @@ std::shared_ptr<redisReply> RediscppSync::Command( const RediscppCommand *cmd ) 
     return raw_p ? std::shared_ptr<redisReply>( raw_p, RedisReplyDeleter ) : std::shared_ptr<redisReply>();
 }
 
+bool RediscppSync::Reconnect() {
+    if(!redis_ctx) {
+        rediscpp_error("redis context is NULL, can not reconnect");
+        return false;
+    }
+
+    int errcode = redisReconnect(redis_ctx.get());
+
+    if(errcode) {
+        rediscpp_error("reconnect redis failed, errcode=%d", errcode);
+        return false;
+    }
+
+    return true;
+}
+
+void RediscppSync::Disconnect() {
+    AssignContext(NULL);
+}
+
+
