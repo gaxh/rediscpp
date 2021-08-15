@@ -7,14 +7,6 @@ extern "C" {
 #include "hiredis.h"
 }
 
-int RediscppSync::LastErrorCode() const {
-    return redis_ctx ? redis_ctx->err : 0;
-}
-
-const char *RediscppSync::LastErrorMessage() const {
-    return redis_ctx ? redis_ctx->errstr : "";
-}
-
 static void RedisContextDeleter(redisContext *ctx) {
     rediscpp_error("free redis context");
     redisFree(ctx);
@@ -28,19 +20,21 @@ void RediscppSync::AssignContext(redisContext *ctx) {
     }
 }
 
-bool RediscppSync::Connect( const char *ip, int port, const struct timeval *timeout ) {
+bool RediscppSync::Connect( const char *ip, int port, struct timeval *connect_timeout, struct timeval *command_timeout ) {
     redisContext *ctx = NULL;
 
-    if( timeout ) {
-        ctx = redisConnectWithTimeout(ip, port, *timeout);
-    } else {
-        ctx = redisConnect(ip, port);
-    }
+    redisOptions option = {0};
+    REDIS_OPTIONS_SET_TCP(&option, ip, port);
+    option.connect_timeout = connect_timeout;
+    option.command_timeout = command_timeout;
+
+    ctx = redisConnectWithOptions(&option);
 
     if( !ctx || ctx->err ) {
         
         if(ctx) {
             rediscpp_error("connect redis %s:%d failed, errcode=%d", ip, port, ctx->err);
+            redisFree(ctx);
         } else {
             rediscpp_error("connect redis %s:%d failed, no context alloced", ip, port);
         }

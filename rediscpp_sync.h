@@ -11,10 +11,7 @@ struct redisReply;
 
 class RediscppSync {
 public:
-    int LastErrorCode() const;
-    const char *LastErrorMessage() const;
-    
-    bool Connect( const char *ip, int port, const struct timeval *timeout );
+    bool Connect( const char *ip, int port, struct timeval *connect_timeout = NULL, struct timeval *command_timeout = NULL);
 
     bool Reconnect();
 

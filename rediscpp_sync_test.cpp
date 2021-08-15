@@ -54,7 +54,10 @@ int main(){
 
     RediscppSync redis;
 
-    redis.Connect("127.0.0.1", 6379, NULL);
+    struct timeval timeout = {0};
+    timeout.tv_sec = 1;
+
+    redis.Connect("127.0.0.1", 6379, &timeout, &timeout);
 
     RediscppCommand cmd;
 
