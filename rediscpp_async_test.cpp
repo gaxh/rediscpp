@@ -27,35 +27,29 @@ int main() {
 
                 RESULT("execute command: %s", cmd.Dump().c_str());
 
-                redis.Command(&cmd, [&redis](int code, const redisReply *reply){
+                redis.Command<std::string>(&cmd, [&redis](int code, std::string *result){
                             if(code) {
                                 RESULT("execute failed: %d", code);
                                 return;
                             }
 
-                            std::string result;
-                            if(rediscpp_parse_reply(reply, &result)) {
-                                RESULT("execute result: %s", result.c_str());
+                            RESULT("execute result: %s", result->c_str());
 
-                                RediscppCommand cmd;
-                                cmd.Arg("get").Arg("shit");
+                            RediscppCommand cmd;
+                            cmd.Arg("get").Arg("shit");
 
-                                RESULT("execute command: %s", cmd.Dump().c_str());
+                            RESULT("execute command: %s", cmd.Dump().c_str());
 
-                                redis.Command(&cmd, [](int code, const redisReply *reply) {
-                                    if(code) {
-                                        RESULT("execute failed: %d", code);
-                                        return;
-                                    }
+                            redis.Command<std::string>(&cmd, [](int code, std::string *result) {
+                                if(code) {
+                                    RESULT("execute failed: %d", code);
+                                    return;
+                                }
 
-                                    std::string result;
-                                    if(rediscpp_parse_reply(reply, &result)) {
-                                        RESULT("execute result: %s", result.c_str());
+                                RESULT("execute result: %s", result->c_str());
 
-                                        running = false;
-                                    }
-                                });
-                            }
+                                running = false;
+                            });
                         });
 
             }, [](int code){

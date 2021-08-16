@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include "rediscpp_context.h"
+#include "rediscpp_reply.h"
 
 class RediscppCommand;
 
@@ -22,6 +23,25 @@ public:
     void Disconnect();
 
     void Command( const RediscppCommand *cmd, command_cb_type cb );
+
+    template<typename ResultType>
+    void Command( const RediscppCommand *cmd, std::function<void(int code, ResultType *result)> cb ) {
+        Command( cmd, [cb](int code, const redisReply *reply) {
+                    if(code) {
+                        cb( code, NULL );
+                        return;
+                    }
+
+                    ResultType result;
+                    bool ok = rediscpp_parse_reply( reply, &result );
+                    
+                    if(ok) {
+                        cb( 0, &result );
+                    } else {
+                        cb( -3, NULL );
+                    }
+                } );
+    }
 
     void HardUpdate();
 
