@@ -9,8 +9,14 @@ extern "C" {
 }
 
 void RediscppAsync::RedisAsyncContextDeleter(redisAsyncContext *ctx) {
-    rediscpp_error("free redis async context");
-    redisAsyncFree(ctx);
+    RediscppAsync *this_ptr = (RediscppAsync *)ctx->c.privdata;
+
+    if(this_ptr->IsDisconnecting()) {
+        rediscpp_error("free redis async context, do not free");
+    } else {
+        rediscpp_error("free redis async context");
+        redisAsyncFree(ctx);
+    }
 }
 
 void RediscppAsync::AssignContext(redisAsyncContext *ctx) {
@@ -79,16 +85,76 @@ void RediscppAsync::RedisDisconnectCallback(const redisAsyncContext *ctx, int st
 
     rediscpp_error("redis disconnect callback, code=%d", status);
     
+
     if(this_ptr->m_disconnect_cb) {
         this_ptr->m_disconnect_cb(status);
+    }
+
+    ++this_ptr->m_disconnecting;
+    
+    this_ptr->AssignContext(NULL);
+
+    --this_ptr->m_disconnecting;
+}
+
+void RediscppAsync::Command(const RediscppCommand *cmd, command_cb_type cb) {
+    if(!redis_ctx) {
+        rediscpp_error("redis context is NULL, can not execute command");
+        if(cb) {cb(-1, NULL);}
+        return;
+    }
+
+    void *ud = NULL;
+
+    if(cb) {
+        ud = m_contexts.Push(std::move(cb));
+    }
+
+    int code = redisAsyncCommandArgv(redis_ctx.get(), RediscppAsync::RedisCommandCallback, ud, cmd->GetArgc(), cmd->GetArgv(), cmd->GetArgvLen());
+
+    if(code){
+        rediscpp_error("redis async command failed: %d", code);
+    }
+
+    if(code && ud) {
+        // 执行失败
+        rediscpp_error("redis async command failed with ud: %d", code);
+        command_cb_type callback;
+
+        if(m_contexts.Pop(ud, &callback)) {
+            callback(code, NULL);
+        }
+    }
+}
+
+void RediscppAsync::RedisCommandCallback(redisAsyncContext *ctx, void *r, void *ud) {
+    RediscppAsync *this_ptr = (RediscppAsync *)ctx->c.privdata;
+
+    if(!this_ptr) {
+        rediscpp_error("can not get RediscppAsync instance");
+        return;
+    }
+
+    redisReply *reply = (redisReply *)r;
+
+    if(ud) {
+        command_cb_type callback;
+
+        if(this_ptr->m_contexts.Pop(ud, &callback)) {
+            callback(reply ? 0 : -2, reply);
+        }
     }
 }
 
 void RediscppAsync::HardUpdate() {
+    if(redis_ctx) redisAsyncHandleRead(redis_ctx.get());
+    if(redis_ctx) redisAsyncHandleWrite(redis_ctx.get());
+//    if(redis_ctx) redisAsyncHandleTimeout(redis_ctx.get());
+}
+
+void RediscppAsync::Disconnect() {
     if(redis_ctx) {
-        redisAsyncHandleRead(redis_ctx.get());
-        redisAsyncHandleWrite(redis_ctx.get());
-        redisAsyncHandleTimeout(redis_ctx.get());
-    }    
+        redisAsyncDisconnect(redis_ctx.get());
+    }
 }
 

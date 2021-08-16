@@ -8,7 +8,7 @@ template<typename ContextType>
 class RediscppContext
 {
 public:
-    using context_type = typename ContextType;
+    using context_type = ContextType;
     typedef void *contextid_type;
 
     bool Pop(contextid_type context_id, context_type *context) {
