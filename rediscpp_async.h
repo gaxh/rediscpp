@@ -24,8 +24,8 @@ public:
 
     void Command( const RediscppCommand *cmd, command_cb_type cb );
 
-    template<typename ResultType>
-    void Command( const RediscppCommand *cmd, std::function<void(int code, ResultType *result)> cb ) {
+    template<typename ResultType, typename ResultCallback = std::function<void(int code, ResultType *result)>>
+    void Command( const RediscppCommand *cmd, ResultCallback cb ) {
         Command( cmd, [cb](int code, const redisReply *reply) {
                     if(code) {
                         cb( code, NULL );
