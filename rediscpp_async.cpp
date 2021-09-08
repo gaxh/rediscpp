@@ -70,6 +70,10 @@ void RediscppAsync::RedisConnectCallback(const redisAsyncContext *ctx, int statu
 
     rediscpp_error("redis connect callback, code=%d", status);
 
+    if(status) {
+        this_ptr->AssignContext(NULL);
+    }
+
     if(this_ptr->m_connect_cb) {
         this_ptr->m_connect_cb(status);
     }

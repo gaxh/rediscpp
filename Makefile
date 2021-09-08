@@ -2,7 +2,7 @@
 HIREDIS_INC = 3rd/hiredis/
 HIREDIS_STATICLIB = 3rd/hiredis/libhiredis.a
 
-CFLAGS = -g -Wall -I$(HIREDIS_INC) --static
+CFLAGS = -g -Wall -I$(HIREDIS_INC)
 CFILES = rediscpp_sync.cpp rediscpp_command.cpp rediscpp_reply.cpp rediscpp_async.cpp
 CHEADERS = rediscpp_sync.h rediscpp_command.h rediscpp_reply.h rediscpp_error.h rediscpp_async.h rediscpp_context.h
 

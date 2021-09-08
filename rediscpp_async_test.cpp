@@ -9,6 +9,23 @@
 
 static bool running = true;
 
+static void start(RediscppAsync &redis) {
+
+    RediscppCommand cmd;
+    cmd.Arg("set").Arg("shit").Arg("123zzz");
+
+    RESULT("execute command: %s", cmd.Dump().c_str());
+
+    redis.Command<std::string>(&cmd, [&redis](int code, std::string *result) {
+                if(code) {
+                    RESULT("execute failed: %d", code);
+                } else {
+                    RESULT("execute result: %s", result->c_str());
+                    start(redis);
+                }
+            });
+}
+
 int main() {
     RESULT("test begin");
 
@@ -21,6 +38,16 @@ int main() {
 
     redis.Connect("127.0.0.1", 6379, [&redis](int code){
                 RESULT("redis connected: %d", code);
+
+                start(redis);
+
+            }, [](int code){
+                RESULT("redis disconnected: %d", code);
+
+            }, &timeout, &timeout);
+
+    /*
+    redis.Connect("127.0.0.1", 6379, [&redis](int code){
 
                 RediscppCommand cmd;
                 cmd.Arg("set").Arg("shit").Arg("123zzz");
@@ -55,9 +82,10 @@ int main() {
             }, [](int code){
                 RESULT("redis disconnected: %d", code);
             }, &timeout, &timeout);
+    */
 
     while(running) {
-        usleep(50000);
+        usleep(500000);
         redis.HardUpdate();
     }
 
